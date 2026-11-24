@@ -29,19 +29,38 @@
                 [0, 80], [988, 90], [1047, 420]];
   var GAME_OVER = [[392, 170], [349, 170], [311, 170], [262, 170], [0, 60], [233, 520, 170]];
 
+  var master = null;
+  var VOLUME = 0.6; // master level; per-sound levels below are relative to it
+
+  // iPhone: the ring/silent switch mutes Web Audio unless the page asks for media playback.
+  try { if (root.navigator && root.navigator.audioSession) root.navigator.audioSession.type = 'playback'; } catch (e) { /* older Safari */ }
+
   function unlock() {
-    if (ctx) { if (ctx.state === 'suspended') ctx.resume(); return; }
     var AC = root.AudioContext || root.webkitAudioContext;
     if (!AC) return;
-    ctx = new AC();
-    if (ctx.state === 'suspended') ctx.resume();
+    if (!ctx) {
+      ctx = new AC();
+      master = ctx.createGain();
+      master.gain.value = VOLUME;
+      master.connect(ctx.destination);
+      // Old iOS only unlocks after something is played inside the gesture: play one silent sample.
+      try { var b = ctx.createBuffer(1, 1, 22050), src = ctx.createBufferSource(); src.buffer = b; src.connect(master); src.start(0); } catch (e) { /* ignore */ }
+    }
+    if (ctx.state !== 'running' && ctx.resume) { try { ctx.resume(); } catch (e) { /* ignore */ } }
   }
-  ['pointerdown', 'keydown', 'touchend'].forEach(function (t) {
-    root.addEventListener(t, unlock, { passive: true });
+  // Capture phase on window and document, so no handler can stop the gesture reaching us.
+  ['pointerdown', 'pointerup', 'touchstart', 'touchend', 'mousedown', 'click', 'keydown'].forEach(function (t) {
+    root.addEventListener(t, unlock, { capture: true, passive: true });
   });
 
   function play(tune, vol) {
-    if (muted || !ctx || ctx.state !== 'running') return;
+    if (muted) return;
+    if (!ctx) return; // no gesture yet: browsers refuse sound before the first press
+    if (ctx.state !== 'running') {
+      // Starting up (the first press): play as soon as it is running instead of dropping the sound.
+      if (ctx.resume) ctx.resume().then(function () { if (ctx.state === 'running') play(tune, vol); }, function () {});
+      return;
+    }
     var t = ctx.currentTime + 0.01;
     for (var i = 0; i < tune.length; i++) {
       var n = tune[i], f = n[0], d = n[1] / 1000;
@@ -53,7 +72,7 @@
         g.gain.setValueAtTime(vol, t);
         g.gain.setValueAtTime(vol, t + d * 0.7);
         g.gain.linearRampToValueAtTime(0.0001, t + d);
-        o.connect(g); g.connect(ctx.destination);
+        o.connect(g); g.connect(master);
         o.start(t); o.stop(t + d + 0.02);
       }
       t += d;
@@ -68,10 +87,10 @@
         if (!warned[name]) { warned[name] = true; console.warn('BBSound: unknown sfx "' + name + '"'); }
         return;
       }
-      play(tune, 0.05);
+      play(tune, 0.12);
     },
-    jingle: function () { play(JINGLE, 0.05); },
-    gameOver: function () { play(GAME_OVER, 0.05); },
+    jingle: function () { play(JINGLE, 0.12); },
+    gameOver: function () { play(GAME_OVER, 0.12); },
     toggle: function () {
       muted = !muted;
       try { root.localStorage.setItem(KEY, muted ? '1' : '0'); } catch (e) { /* see above */ }

@@ -1,6 +1,6 @@
 // Brick Box service worker: caches every file so the phone version works offline.
 // Bump CACHE when any file changes so installed copies refresh.
-const CACHE = 'brickbox-v1';
+const CACHE = 'brickbox-v2';
 const FILES = [
   './',
   'index.html',
