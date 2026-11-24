@@ -46,11 +46,12 @@
         return false;
       }
       function tryMove(t, dir) {
-        if (t.dir !== dir) { t.dir = dir; return true; }       // first press only turns
+        if (t.dir !== dir) { t.dir = dir; sweepShells(); return true; }       // first press only turns
         const [dr, dc] = DIRS[dir];
         const nx = t.cx + dc, ny = t.cy + dr;
         if (!inField(t, nx, ny) || blocked(t, nx, ny)) return false;
         t.cx = nx; t.cy = ny;
+        sweepShells();
         return true;
       }
       function fire(t, owner) {
@@ -88,6 +89,14 @@
         }
         return false;
       }
+      // A tank that moves or turns onto a shell cell is hit by it, as drawn
+      // (otherwise the shell slides out of the tank on its next step with no hit).
+      function sweepShells() {
+        for (const sh of s.shells.slice()) {
+          if (s.over || s.flash > 0) return;
+          if (s.shells.indexOf(sh) >= 0) resolveHits(sh);
+        }
+      }
       function remove(sh) {
         const i = s.shells.indexOf(sh);
         if (i >= 0) s.shells.splice(i, 1);
@@ -118,6 +127,7 @@
         for (const cx of left ? [1, 8] : [8, 1]) {
           if (!blocked(null, cx, 1)) {
             s.enemies.push({ cx, cy: 1, dir: 'down', shell: false, moveAcc: 0, fireT: fireDelay() });
+            sweepShells();
             return;
           }
         }
@@ -125,10 +135,11 @@
 
       function enemyThink(e) {
         // keep moving; when blocked or at random, pick a new direction so it never gets stuck
-        if (rng() < 0.2) { e.dir = NAMES[Math.floor(rng() * 4)]; return; }
+        if (rng() < 0.2) { e.dir = NAMES[Math.floor(rng() * 4)]; sweepShells(); return; }
         if (!tryMove(e, e.dir)) {
           const options = NAMES.filter((d) => d !== e.dir);
           e.dir = options[Math.floor(rng() * options.length)];
+          sweepShells();
         }
       }
 
@@ -166,7 +177,9 @@
         for (const e of s.enemies.slice()) {
           if (s.enemies.indexOf(e) < 0) continue;
           e.moveAcc += dt;
-          while (e.moveAcc >= step) { e.moveAcc -= step; enemyThink(e); }
+          while (e.moveAcc >= step && s.enemies.indexOf(e) >= 0) { e.moveAcc -= step; enemyThink(e); }
+          if (s.over || s.flash > 0) return;
+          if (s.enemies.indexOf(e) < 0) continue;       // shot by a shell it drove into
           e.fireT -= dt;
           if (e.fireT <= 0) {
             e.fireT = fireDelay();

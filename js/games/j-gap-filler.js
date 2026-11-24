@@ -35,6 +35,13 @@
         if (g.cleared % 15 === 0 && speed < 10) { speed++; sfx('levelup'); }
       }
     }
+    // A bullet that ends up inside a filled cell (stack rose or a cleared row dropped onto it,
+    // or a second bullet landed in its cell) stops in the first empty cell above it.
+    function landAbove(b) {
+      let r = b.r;
+      while (r >= 0 && g.stack[r][b.c]) r--;
+      land(r, b.c);
+    }
     function rise() {
       for (let r = 0; r < R - 1; r++) g.stack[r] = g.stack[r + 1];
       g.stack[R - 1] = newRow();
@@ -42,7 +49,7 @@
       // a bullet the stack rose into stops just above that cell
       const live = [];
       for (const b of g.bullets) {
-        if (g.stack[b.r][b.c]) { land(b.r - 1, b.c); if (g.over) return; } else live.push(b);
+        if (g.stack[b.r][b.c]) { landAbove(b); if (g.over) return; } else live.push(b);
       }
       g.bullets = live;
     }
@@ -57,15 +64,21 @@
       for (const b of g.bullets) {
         b.acc += dt;
         let alive = true;
+        if (g.stack[b.r][b.c]) { landAbove(b); continue; }
         while (alive && b.acc >= 25 && !g.over) {
           b.acc -= 25;
           const nr = b.r + 1;
-          if (nr >= R || g.stack[nr][b.c]) { land(b.r, b.c); alive = false; }
+          if (nr >= R || g.stack[nr][b.c]) { landAbove(b); alive = false; }
           else b.r = nr;
         }
         if (alive) live.push(b);
       }
+      // a row cleared by another bullet this tick may have dropped onto a bullet
       g.bullets = live;
+      for (let i = 0; i < g.bullets.length && !g.over;) {
+        const b = g.bullets[i];
+        if (g.stack[b.r][b.c]) { g.bullets.splice(i, 1); landAbove(b); i = 0; } else i++;
+      }
     };
     g.input = function (a) {
       if (g.over) return;
