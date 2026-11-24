@@ -1,6 +1,6 @@
 // Brick Box service worker: caches every file so the phone version works offline.
 // Bump CACHE when any file changes so installed copies refresh.
-const CACHE = 'brickbox-v2';
+const CACHE = 'brickbox-v4';
 const FILES = [
   './',
   'index.html',
@@ -30,7 +30,7 @@ const FILES = [
 self.addEventListener('install', (e) => {
   // A file that is not there yet (a game not written) must not stop the install: log it and go on.
   e.waitUntil(caches.open(CACHE).then((c) => Promise.all(FILES.map((f) =>
-    c.add(f).catch((err) => console.warn('sw: could not cache ' + f, err))))).then(() => self.skipWaiting()));
+    c.add(new Request(f, { cache: 'reload' })).catch((err) => console.warn('sw: could not cache ' + f, err))))).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', (e) => {
@@ -39,13 +39,12 @@ self.addEventListener('activate', (e) => {
     .then(() => self.clients.claim()));
 });
 
-// Cached copy first (fast, works offline); the network copy refreshes the cache for next time.
+// Network first, so a new version shows up straight away; the cached copy is used offline.
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;
-  e.respondWith(caches.open(CACHE).then((c) => c.match(req, { ignoreSearch: true }).then((hit) => {
-    const net = fetch(req).then((res) => { if (res.ok) c.put(req, res.clone()); return res; });
-    if (hit) { net.catch(() => {}); return hit; }
-    return net;
-  })));
+  e.respondWith(caches.open(CACHE).then((c) =>
+    fetch(req, { cache: 'no-cache' })
+      .then((res) => { if (res.ok) c.put(req, res.clone()); return res; })
+      .catch(() => c.match(req, { ignoreSearch: true }).then((hit) => hit || Response.error()))));
 });

@@ -1,9 +1,9 @@
-// Game D: Lane Racer. Dodge enemy cars on a 3-lane road.
+// Game D: Lane Racer. Dodge enemy cars on a 2-lane road (classic brick-game layout).
 (function () {
   'use strict';
   const ROWS = BB.ROWS, COLS = BB.COLS;
   const CAR = [[0, 1], [1, 0], [1, 1], [1, 2], [2, 1], [3, 0], [3, 2]];   // .#. ### .#. #.#
-  const LANE_X = [1, 4, 6];            // left col of each lane
+  const LANE_X = [2, 5];               // left col of each lane: cols 2-4 and 5-7, walls on 0 and 9
   const CAR_H = 4, PLAYER_TOP = ROWS - CAR_H;
   const FLASH_MS = 600;
 
@@ -14,10 +14,12 @@
       const held = opts.held || function () { return false; };
       const startSpeed = BB.clamp(opts.speed | 0 || 1, 1, 10);
       const level = BB.clamp(opts.level | 0 || 1, 1, 10);
-      // minimum free rows between cars in a lane: 10 at level 1, down to 5 at level 10
-      const minGap = Math.round(10 - (level - 1) * 5 / 9);
+      // Free rows between one car's bottom and the next car's top, in ANY lane:
+      // 10 at level 1 down to 4 at level 10. 4 is the least that still leaves the
+      // player a 2-step window to switch lanes between two cars in opposite lanes.
+      const minFree = Math.round(10 - (level - 1) * 6 / 9);
       const s = {
-        score: 0, speed: startSpeed, lives: 4, passed: 0, lane: 1, cars: [], scroll: 0,
+        score: 0, speed: startSpeed, lives: 4, passed: 0, lane: 0, cars: [], scroll: 0,
         acc: 0, flash: 0, over: false,
       };
 
@@ -40,17 +42,14 @@
         if (s.lives <= 0) { s.over = true; return; }
         s.flash = FLASH_MS;
       }
-      function restart() { s.cars = []; s.lane = 1; s.acc = 0; }
+      function restart() { s.cars = []; s.lane = 0; s.acc = 0; }
 
       function trySpawn() {
-        if (rng() > 0.4) return;
-        const lane = Math.floor(rng() * 3);
-        const near = (l) => s.cars.some((c) => c.lane === l && c.top < 4);
-        const last = s.cars.filter((c) => c.lane === lane).reduce((m, c) => Math.min(m, c.top), Infinity);
-        if (last < minGap) return;                                // keep the gap in this lane
-        let blocked = 0;
-        for (let l = 0; l < 3; l++) if (l === lane || near(l)) blocked++;
-        if (blocked >= 3) return;                                  // never block all 3 lanes
+        // the newest car (highest on screen) must be far enough down, whatever its lane
+        const newest = s.cars.reduce((m, c) => Math.min(m, c.top), Infinity);
+        if (newest !== Infinity && newest < minFree) return;      // new car's top = -CAR_H, so gap = newest
+        if (rng() > 0.5) return;
+        const lane = Math.floor(rng() * 2);
         s.cars.push({ lane, top: -CAR_H });
       }
 
@@ -88,7 +87,7 @@
       function input(a) {
         if (s.over || s.flash > 0) return;
         if (a === 'left' && s.lane > 0) { s.lane--; sfx('move'); checkCrash(); }
-        else if (a === 'right' && s.lane < 2) { s.lane++; sfx('move'); checkCrash(); }
+        else if (a === 'right' && s.lane < 1) { s.lane++; sfx('move'); checkCrash(); }
       }
 
       function view() {
