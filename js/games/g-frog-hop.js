@@ -38,12 +38,16 @@
       over: false, score: 0, lives: 4, flash: 0, t: 0,
       frog: { r: START, c: 4 }, homes: [0, 0, 0, 0, 0], lanes: {},
     };
-    const t01 = (level - 1) / 9;
+    // Difficulty by level, chosen so every setting fits a 10-cell lane (makeLane would
+    // otherwise shrink it silently). [count, min length, max length, min gap]
+    //   road:  more and longer cars as the level rises
+    //   river: less log to stand on as the level rises (about 70% of the lane at level 1, 30% at 10)
+    const ROAD = level <= 3 ? [1, 2, 3, 3] : level <= 7 ? [2, 2, 3, 2] : [2, 3, 3, 2];
+    const RIVER = level <= 3 ? [2, 3, 4, 1] : level <= 6 ? [2, 2, 3, 2] : level <= 8 ? [1, 4, 5, 5] : [1, 3, 3, 7];
     for (let i = 1; i <= 9; i++) {
       if (i === SAFE) continue;
-      let cells;
-      if (isRoad(i)) cells = makeLane(rng, 1 + Math.round(t01 * 2), 2, 4, 2);
-      else cells = makeLane(rng, 2, 3, 5 - Math.round(t01 * 2), 3);
+      const p = isRoad(i) ? ROAD : RIVER;
+      const cells = makeLane(rng, p[0], p[1], p[2], p[3]);
       g.lanes[i] = { cells, dir: i % 2 ? 1 : -1, mult: 1 + rng(), acc: 0 };
     }
 
