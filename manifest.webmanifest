@@ -1,0 +1,19 @@
+{
+  "name": "Brick Box 12-in-1",
+  "short_name": "Brick Box",
+  "description": "A 12-in-1 LCD brick-game handheld.",
+  "start_url": "phone.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1a1a1a",
+  "theme_color": "#e3bf33",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23e3bf33'/%3E%3Crect x='9' y='8' width='46' height='34' rx='4' fill='%239ead86'/%3E%3Cg fill='%231b1f15'%3E%3Crect x='15' y='14' width='8' height='8'/%3E%3Crect x='23' y='14' width='8' height='8'/%3E%3Crect x='23' y='22' width='8' height='8'/%3E%3Crect x='39' y='30' width='8' height='8'/%3E%3Crect x='31' y='30' width='8' height='8'/%3E%3Crect x='15' y='30' width='8' height='8'/%3E%3C/g%3E%3Ccircle cx='47' cy='52' r='6' fill='%23c92a1c'/%3E%3Crect x='12' y='49' width='16' height='6' rx='2' fill='%233b3e3b'/%3E%3C/svg%3E",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

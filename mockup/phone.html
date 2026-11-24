@@ -1,0 +1,10 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BRICK BOX 12-in-1 - phone</title>
+<style>html,body{margin:0;padding:0;background:#1a1a1a;overflow:hidden}html body .bb-phone{margin:0}</style></head>
+<body><div id="app"></div>
+<script src="frames.js"></script><script src="console.js"></script>
+<script>
+var f = window.FRAMES[0];
+renderConsole(document.getElementById('app'), {game: f.name, frame: f.frame, next: f.next, score: f.score, hiscore: 12800, speed: f.speed, level: f.level, layout: 'phone'});
+</script></body></html>
