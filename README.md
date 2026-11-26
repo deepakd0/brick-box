@@ -11,3 +11,7 @@ Keys: arrows move, Space/X rotate or fire, Enter start/pause, M sound, R reset, 
 In the menu: Left/Right pick a game, Up speed, Down level, Fire to start.
 
 Test: `node tests/smoke.mjs`
+
+## Copyright
+
+© 2026 Deepak Dobariyal. All rights reserved. You may play the game in a browser. Copying, modifying, re-hosting or redistributing the code, art or game, or presenting it as your own, is not allowed without written permission. See [LICENSE](LICENSE).
